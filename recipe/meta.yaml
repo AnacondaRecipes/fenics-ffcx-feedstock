@@ -1,0 +1,122 @@
+{% set name = "fenics-ffcx" %}
+{% set version = "0.11.0" %}
+
+package:
+  name: {{ name }}-meta
+  version: {{ version }}
+
+source:
+  url: https://github.com/fenics/ffcx/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 7df1c086c0398b72343a5f047c7e6aa17ea05f1ba123e3e0ca858d6a133b13bd
+
+build:
+  number: 0
+  # upstream requires-python >=3.11
+  skip: true  # [py<311]
+
+requirements:
+  # python in the parent render is required for the {{ PYTHON }}-based output
+  # scripts; it also drives the per-python variant matrix of fenics-ffcx
+  host:
+    - python
+
+outputs:
+  - name: fenics-ufcx
+    script: build-ufcx.sh  # [unix]
+    script: build-ufcx.bat  # [win]
+    build:
+      # no python dependency: build the C header package once per platform only,
+      # otherwise every python variant produces an identical artifact
+      skip: true  # [py!=311]
+      ignore_run_exports_from:
+        - {{ compiler('c') }}
+        - {{ stdlib('c') }}
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ stdlib('c') }}
+        - cmake
+        - ninja-base
+      run:
+        - __unix  # [unix]
+        - __win  # [win]
+    test:
+      files:
+        - test-ufcx
+      requires:
+        - cmake
+        - ninja-base
+        - pkg-config
+        - {{ compiler('cxx') }}
+      commands:
+        - test -f $PREFIX/include/ufcx.h  # [unix]
+        - if not exist %LIBRARY_INC%\\ufcx.h exit 1  # [win]
+        - test -f $PREFIX/share/ufcx/cmake/ufcxConfig.cmake  # [unix]
+        - if not exist %LIBRARY_PREFIX%\\share\\ufcx\\cmake\\ufcxConfig.cmake exit 1  # [win]
+        - cmake -B build-ufcx-test -G Ninja test-ufcx  # [unix]
+        - cmake --build build-ufcx-test --verbose  # [unix]
+        - ./build-ufcx-test/test-ufcx  # [unix]
+        - cmake -B build-ufcx-test -G Ninja test-ufcx  # [win]
+        - cmake --build build-ufcx-test --verbose  # [win]
+        - build-ufcx-test\\test-ufcx.exe  # [win]
+
+  - name: {{ name }}
+    script: build-ffcx-py.sh  # [unix]
+    script: build-ffcx-py.bat  # [win]
+    build:
+      entry_points:
+        - ffcx = ffcx:__main__.main
+    requirements:
+      host:
+        - python
+        - pip
+        - setuptools >=77.0.3
+        - wheel
+      run:
+        - python
+        - setuptools >=77.0.3
+        - numpy >=1.21
+        - cffi
+        - fenics-basix >=0.11.0,<0.12.0
+        - fenics-ufl >=2026.1.0,<2026.2.0
+    test:
+      source_files:
+        - test
+      imports:
+        - ffcx
+      requires:
+        - pip
+        - pytest
+        - numba
+        - sympy
+        - pygraphviz
+        - {{ compiler('c') }}
+      commands:
+        - pip check
+        # bilinear-form tests JIT-compile generated C and need a working compiler
+        # toolchain in the test env; the remaining tests exercise code generation
+        - python -m pytest -v -k "not bilinear" test
+
+about:
+  home: https://fenicsproject.org
+  license: LGPL-3.0-or-later
+  license_family: LGPL
+  license_file:
+    - COPYING.LESSER
+  summary: The FEniCSx Form Compiler
+  description: |
+    FFCx is a compiler for finite element variational forms. From a high-level
+    description of the form in the Unified Form Language (UFL), it generates
+    efficient low-level C code that can be used to assemble the corresponding
+    discrete operator (tensor).
+
+    FFCx is part of the FEniCS Project and is compatible with DOLFINx.
+  doc_url: https://docs.fenicsproject.org
+  dev_url: https://github.com/fenics/ffcx
+
+extra:
+  skip-lints:
+    - missing_imports_or_run_test_py  # fenics-ufcx is a C header package, no python imports
+    - python_build_tools_in_host  # setuptools is an upstream runtime dep of ffcx (cffi)
+  recipe-maintainers:
+    - minrk

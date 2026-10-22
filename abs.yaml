@@ -1,0 +1,3 @@
+channels:
+  - https://staging.continuum.io/pbp/fs/fenics-ufl-feedstock/pr1/c96c8cf
+  - https://staging.continuum.io/pbp/fs/fenics-basix-feedstock/pr1/e7a5854

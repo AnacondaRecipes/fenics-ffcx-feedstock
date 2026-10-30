@@ -86,7 +86,7 @@ outputs:
         - ffcx
       requires:
         - pip
-        - pytest
+        - pytest >=6.0
         - numba
         - sympy
         - pygraphviz
@@ -103,6 +103,8 @@ about:
   license_family: LGPL
   license_file:
     - COPYING.LESSER
+    - LICENSE
+    - UNLICENSE
   summary: The FEniCSx Form Compiler
   description: |
     FFCx is a compiler for finite element variational forms. From a high-level

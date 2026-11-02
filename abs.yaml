@@ -1,3 +1,4 @@
+build_env_vars:
+  ANACONDA_ROCKET_ENABLE_PY315: yes
 channels:
-  - https://staging.continuum.io/pbp/fs/fenics-ufl-feedstock/pr1/8d1d6aa
-  - https://staging.continuum.io/pbp/fs/fenics-basix-feedstock/pr0/b017bca
+  - https://staging.continuum.io/pbp/fs/fenics-basix-feedstock/pr1/17d9ecf
